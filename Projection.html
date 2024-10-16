@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth Projection Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chart-container {
+            width: 80%;
+            margin: auto;
+        }
+        input {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Growth Projection Over Weeks</h1>
+    <label for="initialValue">Initial Value:</label>
+    <input type="number" id="initialValue" placeholder="Enter initial value" required>
+    
+    <label for="growthPercentage">Growth Percentage (%):</label>
+    <input type="number" id="growthPercentage" placeholder="Enter growth percentage" required>
+
+    <label for="numberOfWeeks">Number of Weeks:</label>
+    <input type="number" id="numberOfWeeks" value="5" min="1" required>
+
+    <button onclick="generateChart()">Generate Chart</button>
+
+    <div id="chart-container">
+        <canvas id="growthChart"></canvas>
+    </div>
+
+    <script>
+        let growthChart; // Variable to hold the chart instance
+
+        function generateChart() {
+            const initialValue = parseFloat(document.getElementById('initialValue').value);
+            const growthPercentage = parseFloat(document.getElementById('growthPercentage').value) / 100;
+            const numberOfWeeks = parseInt(document.getElementById('numberOfWeeks').value);
+
+            if (isNaN(initialValue) || isNaN(growthPercentage) || isNaN(numberOfWeeks) || numberOfWeeks < 1) {
+                alert("Please enter valid numbers for all fields.");
+                return;
+            }
+
+            // Create an array for the number of weeks specified by the user
+            const weeks = Array.from({ length: numberOfWeeks }, (_, i) => i); // [0, 1, ..., numberOfWeeks-1]
+            const values = weeks.map(week => initialValue * Math.pow(1 + growthPercentage, week));
+
+            // Get today's date
+            const today = new Date();
+            const labels = weeks.map(week => {
+                const futureDate = new Date(today);
+                futureDate.setDate(today.getDate() + week * 7); // Add weeks in days
+                return futureDate.toLocaleDateString(); // Format date as MM/DD/YYYY
+            });
+
+            const ctx = document.getElementById('growthChart').getContext('2d');
+
+            // If the chart already exists, destroy it before creating a new one
+            if (growthChart) {
+                growthChart.destroy();
+            }
+
+            // Create a new chart instance
+            growthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Projected Value',
+                        data: values,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 5 // Make points more visible
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    // Use the x-axis label (date) as title
+                                    return `Date: ${tooltipItems[0].label}`;
+                                },
+                                label: function(tooltipItem) {
+                                    const currentValue = tooltipItem.raw;
+                                    let difference = 0;
+
+                                    // Calculate the difference if not the first item
+                                    if (tooltipItem.dataIndex > 0) {
+                                        const previousValue = values[tooltipItem.dataIndex - 1];
+                                        difference = currentValue - previousValue;
+                                    }
+
+                                    return `Value: ${currentValue.toFixed(2)}${difference ? ` (Difference: ${difference.toFixed(2)})` : ''}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
